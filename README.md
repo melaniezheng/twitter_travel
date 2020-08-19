@@ -10,7 +10,7 @@ __stock data__: Alpha Vantage API <br>
 
 #### NLP on tweets:
 - search keyword: travel 
-- remove retweets
+- remove retweets --> save to sqlite database (cronjob every 5 minute)
 - remove non-english tweets (due to googletrans api restriction on daily call limits)
 - remove urls and mentions
 - process emojis and non-text word representations
@@ -18,8 +18,9 @@ __stock data__: Alpha Vantage API <br>
 - gensim's w2v model and sklearn's tfidf model to vectorize cleaned tweets
 
 #### Stock price data:
-- get realtime stock price (ticker:JETS) at 5 minute interval
+- get realtime stock price (ticker:JETS) at 5 minute interval 
 - stock data columns: datetime, open, high, low, close, volumn, pct_change
+- save to sqlite database (cronjob every day)
 - mask current close price (this will be the target of the predictive model) and shift close column to represent last_price(t-5 minutes) and last_volumn(t-5 minutes)
 
 #### Random Forest Regressor (RFR):
