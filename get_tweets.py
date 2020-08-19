@@ -107,7 +107,7 @@ if __name__ == "__main__":
     t = datetime.fromtimestamp(time.time())
     s = t.strftime("%Y-%m-%d_%H:%M")
     print(f'{s} - Starting Main...')
-    insert_data(df = search_tweets(), db_file = 'traveltweets_20200806.db')
+    insert_data(df = search_tweets(), db_file = 'traveltweets.db')
     t = datetime.fromtimestamp(time.time())
     s = t.strftime("%Y-%m-%d_%H:%M")
     print(f'{s} - Complete!')
