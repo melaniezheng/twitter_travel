@@ -26,7 +26,7 @@ def search_tweets(search_words = "travel OR TRAVEL OR Travel", items = 250):
     # Collect tweets
     try:
         tweets = tweepy.Cursor(api.search,q=new_search,#lang="en",
-                            since = '2020-08-01',#until = '2020-01-31'
+                            since = '2020-07-01',
                             ).items(items)
     except Exception as e:
         print(f'Failed to retrieve tweets. {e}')
