@@ -3,9 +3,9 @@ Using travel tweets to predict and trave sector ETF 'JETS' price. Specifically, 
 
 Note that although the model is able to predict the next stock price at the high accuracy, it is very difficult to monetize this due to the day-trading restrictions for trading in high frequency and associated transaction cost. 
 
-date range: 2020-07-15 to 2020-07-27.
-twitter data: twitter API, tweepy
-stock data: Alpha Vantage API
+date range: 2020-07-15 to 2020-07-27. <br>
+twitter data: twitter API, tweepy <br>
+stock data: Alpha Vantage API <br>
 
 
 #### NLP on tweets:
