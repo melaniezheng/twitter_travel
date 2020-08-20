@@ -53,7 +53,7 @@ if __name__ == "__main__":
     t = datetime.datetime.fromtimestamp(time.time())
     s = t.strftime("%Y-%m-%d_%H:%M")
     print(f'{s} - Starting Main...')
-    dbfn = 'stocks_30min_aug2020.db'
+    dbfn = 'stocks.db'
     tickers = ['DAL','UAL','JETS']
     try:
         insert_data(dbfn, tickers)
