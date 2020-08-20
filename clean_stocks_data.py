@@ -38,11 +38,7 @@ def get_stock_data(ticker, from_date, to_date, db_file = 'stocks.db'):
     stockdf = stockdf[stockdf.day.isin([0,1,2,3,4])] # Monday to Friday
     stockdf.drop(columns=['time','day'], inplace=True)
 
-<<<<<<< HEAD
     stockdf.to_csv(f'{ticker}_{from_date}_{to_date}.csv', index=False)
-=======
-    stockdf.to_csv(f'./data/{ticker}_{from_date}-{to_date}.csv', index=False)
->>>>>>> 307a7b6b6eefb7f0d1438d11d01823a5f4f85296
 
 def validate(date_text):
     try:
