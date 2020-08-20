@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib
 
-# for string processing
+# W2V library
 import gensim
 from gensim.models import word2vec, KeyedVectors
 import logging
@@ -58,10 +58,9 @@ if __name__ == '__main__':
     except:
         raise FileNotFoundError("Please make sure file exists in data folder!\
             If file is not found, run clean_tweets_data.py to save a file for specified dates.")
-    get_tweets_data(from_date, to_date)
     print("Creating Word2Vec Model...")
     model_name = input('please enter model name to save')
-    word2vec_model(df.clean_text.tolist(),'w2v_model')
+    word2vec_model(df.clean_text.tolist(), model_name)
 
     
     
