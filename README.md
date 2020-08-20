@@ -1,12 +1,11 @@
 ### Objective
 Using travel tweets to predict and trave sector ETF 'JETS' price. Specifically, combine the current JETS price (at time t) and data extracted from twitter to generate a random forest regressor to predict next JETS (at time t+5 minuutes). 
 
-Note that although the model is able to predict the next stock price at the high accuracy, it is very difficult to monetize this due to the day-trading restrictions for trading in high frequency and associated transaction cost. 
-
 __date range__: 2020-07-15 to 2020-07-27. <br>
 __twitter data__: twitter API, tweepy <br>
 __stock data__: Alpha Vantage API <br>
 
+Note that the training data range is only 2 weeks period and the project is just a POC as there are many limitations.
 
 #### NLP on tweets:
 - search keyword: travel 
