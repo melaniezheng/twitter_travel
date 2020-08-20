@@ -1,4 +1,5 @@
 import os
+import datetime
 import pandas as pd
 import numpy as np
 import joblib
@@ -39,7 +40,7 @@ def word2vec_model(list_of_texts, model_name, num_features = 200):
 
     # Save Model
     model.init_sims(replace=True) # memory efficient
-    model.save(model_name)
+    model.save(f'./models/{model_name}')
     return model
 
 def validate(date_text):
