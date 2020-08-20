@@ -1,5 +1,8 @@
 #!/Users/melaniezheng/opt/anaconda3/bin/python
 
+'''cronjob schedule to run every 5 minutes:
+ex: */5 * * * * . /Users/melaniezheng/.bash_profile; cd /twitter_travel/ && ./get_tweets.py >> log.txt
+'''
 import os
 import tweepy 
 import pandas as pd
@@ -18,7 +21,7 @@ auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
 api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=False)#,parser=tweepy.parsers.JSONParser())
 
-def search_tweets(search_words = "travel OR TRAVEL OR Travel", items = 250):
+def search_tweets(search_words = "travel OR TRAVEL OR Travel", items = 500):
 
     # minus retweets
     new_search = search_words + " -filter:retweets"
@@ -101,7 +104,23 @@ def insert_data(df,  db_file, tablename='TWEETS'):
     df.place_coordinates = df.place_coordinates.apply(lambda x : str(x))
     
     engine = create_engine(f'sqlite:///{db_file}', echo=False)
-    df.to_sql(tablename, con=engine, if_exists='append', index=False)
+    df.set_index('id_str', inplace=True)
+    
+    '''following blocks are performing manual UPSERT
+    pandas to_sql does not support UPSERT for SQlite'''
+    
+    # pull existing tweets in the db
+    df_update = pd.read_sql_query(sql='SELECT * FROM AMD;', con=engine, index_col = 'id_str')
+    # update existing records
+    df_update.update(df)
+    
+    dup_rows = pd.merge(df, df_update,  left_index = True, right_index = True).index
+    new_data = df[~df.index.isin(dup_rows)] # get new records
+    
+    df_update.to_sql('AMD', con=engine, if_exists='replace', index=True) # update existing records
+    new_data.to_sql('AMD', con=engine, if_exists='append', index=True) # insert new records
+    
+    print(f'{new_data.shape[0]} new data inserted')
 
 if __name__ == "__main__":
     t = datetime.fromtimestamp(time.time())
