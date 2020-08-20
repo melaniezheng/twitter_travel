@@ -4,6 +4,7 @@ Using travel tweets to predict and trave sector ETF 'JETS' price. Specifically, 
 __date range__: 2020-07-15 to 2020-07-27. <br>
 __twitter data__: twitter API, tweepy <br>
 __stock data__: Alpha Vantage API <br>
+__python__ : version 3.7.4
 
 Note that the training data range is only 2 weeks period and the project is just a POC as there are many limitations.
 
