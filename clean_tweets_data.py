@@ -37,9 +37,13 @@ def clean_tweets(tweet, translate = False, tokenize = False):
     - remove common stopwords
     - stem instead of lemmitize (for faster process, although draw back is the stemmed words sometime do not look like a real word)
     - process emojis i.g. :) --> smily face'''
+    tweet = str(tweet) # sometimes not a string type i.e. float
     orig_tweet = copy.deepcopy(tweet)
     # remove urls,  mentions, and hashtags
-    tweet = p.clean(tweet) 
+    try:
+        tweet = p.clean(tweet) 
+    except Exception as e:
+        print(e)
     # 1. remove non-letter or space.
     tweet = re.sub('[^[a-z|A-Z|\s]*', '', tweet)
     if translate:

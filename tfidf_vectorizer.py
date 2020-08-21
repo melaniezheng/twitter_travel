@@ -12,7 +12,7 @@ def tfidf_vectorizer(df, model_name, num_features = 200):
     vectorizer = TfidfVectorizer()
     X = df.text.apply(lambda tw: clean_tweets(tw, tokenize=False))
     vectorizer.fit(X)
-    joblib.dump(vectorizer, model_name)
+    joblib.dump(vectorizer, f'./models/{model_name}')
     return vectorizer
 
 def validate(date_text):
