@@ -1,5 +1,5 @@
 ### Objective
-Using travel tweets to predict and trave sector ETF 'JETS' price. Specifically, combine the current JETS price (at time t) and data extracted from twitter to generate a random forest regressor to predict next JETS (at time t+5 minuutes). 
+Using travel tweets to predict and trave sector ETF 'JETS' price. Specifically, combine the current JETS price (at time t) and data extracted from twitter to generate a random forest regressor to predict next JETS (at time t+15 minuutes). 
 
 __date range__: 2020-07-15 to 2020-07-27. <br>
 __twitter data__: twitter API, tweepy <br>
@@ -15,7 +15,7 @@ Note that the training data range is only 2 weeks period and the project is just
 - remove urls and mentions
 - process emojis and non-text word representations
 - cleaning tweets: lower case, tokenize, remove stopwords, lemmatize and stem words
-- gensim's w2v model and sklearn's tfidf model to vectorize cleaned tweets
+- use TextBlob to get sentiment and polarity of each tweets
 
 #### Stock price data:
 - get realtime stock price (ticker:JETS) at 5 minute interval 
@@ -23,17 +23,26 @@ Note that the training data range is only 2 weeks period and the project is just
 - save to sqlite database (cronjob every day)
 - mask current close price (this will be the target of the predictive model) and shift close column to represent last_price(t-5 minutes) and last_volumn(t-5 minutes)
 
-#### Random Forest Regressor (RFR):
-- train and save gensim's w2v and tfidf model
-- build pipeline for preprocessing
-- 75 / 25 train/test split
-- 3 fold cross validation for hyperparameter tuning for RFR
-- finalize and save RFR model
-- "productionize" and run a simulation with brand new test data (out of bag).
+#### Predict JETS Price at t+ 15min using Feed Forward Neural Net:
+- build neural net with 50 neurons in hidden layer. (try simple NN first before adding more hidden layers)
+- feature preprocessing and engineering: 
+  - hand craft features: tweets_count (in 15 minute interval), average sentiment, average polarity, average verified user, average followers count
+  - total features 8 (above + last stock price, last trading volumn, last percent change)
+  - normalize and scale features
+- training:
+  - evaluate model using Mean Squared Error and Mean Absolute Error
+  - try batch norm
+  - for more complex model, try dropout layers
+  - 80/20 split for train/validation
+  - early stopping to minimize validation loss
+  - plot model training history to make sure model is not overfit or underfit
+- prediction:
+  - script to preprocess prediction data and generate feature vectors
+  - prediction accuracy measured in Mean Absoute Error and time.
 
 #### TO DO:
 - write algorithm to output trading strategy (buy, sell, hold) that satisfied on investing objectives within constraints. 
 - explore other models. especially RNN which makes sense for sequencial stock market.
-- try different feature engineering. i.e. adding more text feature from tweets, different w2v model, n-gram tfidf.
-- stream real-time tweet data (instead of api.search)
+- try different feature engineering. i.e. adding more text feature from tweets, try w2v model, n-gram tfidf.
+- stream real-time tweet data (instead of api.search) for more up-to-date analysis and prediction.
 - pay for googletrans api to make use of massive non-english tweets.
