@@ -29,16 +29,16 @@ Note that the training data range is only 2 weeks period and the project is just
   - hand craft features: tweets_count (in 15 minute interval), average sentiment, average polarity, average verified user, average followers count
   - total features 8 (above + last stock price, last trading volumn, last percent change)
   - normalize and scale features
-- training:
+- training: (train_neural_network.py) 
   - evaluate model using Mean Squared Error and Mean Absolute Error
   - try batch norm
   - for more complex model, try dropout layers
   - 80/20 split for train/validation
   - early stopping to minimize validation loss
   - plot model training history to make sure model is not overfit or underfit
-- prediction:
+- prediction: (predict.py)
   - script to preprocess prediction data and generate feature vectors
-  - prediction accuracy measured in Mean Absoute Error and time.
+  - predict stock price at t+15 min using data at t.
   
 #### Prediction Accuracy:
 - Best Model (FFNN-50neurons) Mean Absolute Error on Test Set - 0.0009964263153076302
