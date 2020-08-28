@@ -1,8 +1,7 @@
-import os
+
 import datetime
 import pandas as pd
 import numpy as np
-import pickle
 from textblob import TextBlob
 import joblib
 from sklearn.preprocessing import MinMaxScaler
@@ -39,7 +38,7 @@ def training_preprocessor(tweets_df, stocks_df, train_size, interval = 15, scale
 
     # merge stocks data
     features = pd.merge(features, stocks_df, left_on='datetime', right_on = 'date').drop(columns=['date'])
-    features.to_csv('./data/tmp/features.csv', index = False)
+    features.to_csv(f'./data/tmp/features_train_{features['datetime'].max().strftime("%m-%d-%Y_%H-%M-%S")}.csv', index = False)
     # features should have datetime, verified, followers_count, tweet_count, has_locations, \
     # last_close, last_vol, last_pct_change, target
     train = features[:176]
@@ -87,15 +86,16 @@ def prediction_preprocessor(tweets_df, stocks_df, interval = 15, scale = True):
 
     # merge stocks data
     features = pd.merge(features, stocks_df, left_on='datetime', right_on = 'date').drop(columns=['date'])
-    features.to_csv('./data/tmp/features.csv', index = False)
+    features.to_csv(f'./data/tmp/features_pred_{features['datetime'].max().strftime("%m-%d-%Y_%H-%M-%S")}.csv', index = False)
     # features should have datetime, verified, followers_count, tweet_count, has_locations, \
     # last_close, last_vol, last_pct_change
-    X = train.pop('datetime')
+    X = train.copy
+    dt = train.pop('datetime')
 
     if scale:
         sc = joblib.load('./models/min_max_scaler')
         X = sc.transform(X)
-    return X
+    return X, dt
 
 
 def validate_file(type, filename):
@@ -126,7 +126,8 @@ def run_preprocessor(type, tweets_file, stocks_file, train_size=176, interval = 
     elif type == 'predicting':
         tweets_df = validate_file('tweets', tweets_file)
         stocks_df = validate_file('stocks', stocks_file)
-        X = prediction_preprocessor(tweets_df, stocks_df, train_size, interval)
+        X = prediction_preprocessor(tweets_df, stocks_df, interval)
+        return X
     else:
         raise ValueError('Incorrect type provided. Please enter "training" or "predicting".')
     
