@@ -14,35 +14,34 @@ def generate_word_feature_vectors(w2vmodel, tfVectorizer, df, params, interval =
     # currently we have 200 feature vectors per tweet + 3 additional hand crafted features 
     model = word2vec.Word2Vec.load(w2vmodel, mmap='r')
     vectorizer = joblib.load(tfVectorizer)
-    tweets = df.clean_tweets.apply(lambda l: ' '.join(l))
+    tweets = df.clean_text.apply(lambda l: ' '.join(l))
     vectors = vectorizer.transform(tweets)
     feature_names = vectorizer.get_feature_names()
 
     # convert tfidf vectors to dataframe
     tfidf = pd.DataFrame(vectors.toarray(), columns=feature_names)
     w2v_vocabs = list(model.wv.vocab.keys())
-    missing_word = []
-    # drop tfidf tokens that are not in w2v tokens
-    for word in feature_names:
-        if word not in w2v_vocabs:
-            missing_word.append(word)
-    tfidf.drop(columns=missing_word, inplace=True)
-
-    # for each tweet we define feature vectors as the mean of w2v vector * tf-idf value for each word in the tweet.
     wv = model.wv
     wv_num_features = wv.vectors[0].shape[0]
+
+    # for each tweet we define feature vectors as the mean of w2v vector * tf-idf value for each word in the tweet.
     w2v_tfidf_mean = []
-    for i, tweet in enumerate(tweets):
-        n = len(tweet.split())
-        v = np.zeros(200,)
+    for i, tweet in enumerate(df.clean_text):
+        n = 0
+        v = np.zeros(wv_num_features,)
         for word in tweet.split():
             if word in w2v_vocabs and word in feature_names:
+                n += 1
                 w2v = wv[word]
                 ti = tfidf.iloc[i][word]
                 v += w2v*ti
-        w2v_tfidf_mean.append(v/n)
+        try:
+            w2v_tfidf_mean.append(v/n)
+        except ZeroDivisionError:
+            w2v_tfidf_mean.append(v)
     X = pd.DataFrame(w2v_tfidf_mean, columns=['feat_'+str(i) for i in range(wv_num_features)])
-    X.to_csv('./data/tmp/feature_vectors.csv', index = False)
+    now = datetime.datetime.now()
+    X.to_csv(f'./data/tmp/feature_vectors_{now.strftime("%Y-%m-%d-%H:%M")}.csv', index = False)
     
     
     # add additional features i.e. high_followers, high_num_tweets (1 for high 0 for low), 
@@ -72,20 +71,24 @@ def generate_features(df, stocks_df, params, w2vmodel="./models/w2v_model", tfVe
     dt = X.pop('datetime')
     return X, y, dt
 
-def validate(date_text):
-    try:
-        datetime.datetime.strptime(date_text, '%Y-%m-%d')
-    except ValueError:
-        raise ValueError("Incorrect data format, should be YYYY-MM-DD")
+def validate_file(type, filename):
+    if type == 'tweets':
+        try:
+            df = pd.read_csv(f'./data/{filename}')
+        except FileNotFoundError:
+            raise FileNotFoundError(f"{filename} Not Found!")
+    elif type == 'stocks':
+        try:
+            df = pd.read_csv(f'./data/{filename}', parse_dates=['date'])
+        except FileNotFoundError:
+            raise FileNotFoundError(f"{filename} Not Found!")
+    else:
+        raise ValueError(f'Incorrect type. Choose from ["tweets", "stocks"]')
+    return df
 
-def run_preprocessor(from_date, to_date):
-    validate(from_date)
-    validate(to_date)
-    try:
-        df = pd.read_csv(f'./data/tweets_{from_date}_{to_date}.csv')
-        stocks_df = pd.read_csv(f'./data/JETS_{from_date}_{to_date}.csv',parse_dates=['date'])
-    except:
-        raise FileNotFoundError("Please make sure file exists in data folder! If the file is not found, run clean_tweets_data.py to save a file for specified dates.")
+def run_preprocessor(tweets_file, stocks_file):
+    df = validate_file('tweets', tweets_file)
+    stocks_df = validate_file('stocks', stocks_file)
     params = pickle.load(open('./models/params.p','rb'))
     X, y, dt = generate_features(df, stocks_df, params)
     return X, y, dt

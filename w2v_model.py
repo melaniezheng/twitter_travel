@@ -43,25 +43,29 @@ def word2vec_model(list_of_texts, model_name, num_features = 200):
     model.save(f'./models/{model_name}')
     return model
 
-def validate(date_text):
-    try:
-        datetime.datetime.strptime(date_text, '%Y-%m-%d')
-    except ValueError:
-        raise ValueError("Incorrect data format, should be YYYY-MM-DD")
+def validate_file(type, filename):
+    if type == 'tweets':
+        try:
+            df = pd.read_csv(f'./data/{filename}', \
+                converters={"clean_text": lambda x: x.strip("[]").split(", ")})
+        except FileNotFoundError:
+            raise FileNotFoundError(f"{filename} Not Found!")
+    elif type == 'stocks':
+        try:
+            df = pd.read_csv(f'./data/{filename}', parse_dates=['date'])
+        except FileNotFoundError:
+            raise FileNotFoundError(f"{filename} Not Found!")
+    else:
+        raise ValueError(f'Incorrect type. Choose from ["tweets", "stocks"]')
+    return df
 
 if __name__ == '__main__':
-    from_date = input('please enter from date, format YYYY-MM-DD')
-    to_date = input('please enter to date, format YYYY-MM-DD')
-    validate(from_date)
-    validate(to_date)
-    try:
-        df = pd.from_csv(f'./data/tweets_{from_date}_{to_date}.csv')
-    except:
-        raise FileNotFoundError("Please make sure file exists in data folder!\
-            If file is not found, run clean_tweets_data.py to save a file for specified dates.")
+    tweet_file = input('please enter tweet filename: ')
+    df = validate_file('tweet', tweet_file)
+    df = df[~df.clean_text.isna()]
     print("Creating Word2Vec Model...")
     model_name = input('please enter model name to save')
-    word2vec_model(df.clean_text.tolist(), model_name)
+    word2vec_model(df.clean_text.apply(lambda s: s.split()), model_name)
 
     
     

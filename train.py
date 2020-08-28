@@ -14,33 +14,33 @@ def generate_word_feature_vectors(w2vmodel, tfVectorizer, train_df, interval = '
     # currently we have 200 feature vectors per tweet + 3 additional hand crafted features 
     model = word2vec.Word2Vec.load(w2vmodel, mmap='r')
     vectorizer = joblib.load(tfVectorizer)
-    clean_tweets = train_df.text.apply(lambda t: clean_tweets(t, tokenize = False))
-    vectors = vectorizer.transform(clean_tweets)
+    train_df = train_df[~train_df.clean_text.isna()]
+    vectors = vectorizer.transform(train_df.clean_text)
     feature_names = vectorizer.get_feature_names()
 
     # convert tfidf vectors to dataframe
     tfidf = pd.DataFrame(vectors.toarray(), columns=feature_names)
     w2v_vocabs = list(model.wv.vocab.keys())
-    missing_word = []
-    # drop tfidf tokens that are not in w2v tokens
-    for word in feature_names:
-        if word not in w2v_vocabs:
-            missing_word.append(word)
-    tfidf.drop(columns=missing_word, inplace=True)
 
-    # for each tweet we define feature vectors as the mean of w2v vector * tf-idf value for each word in the tweet.
+    # for each tweet we define feature vectors as:
+    # the mean of w2v vector * tf-idf value for each word in the tweet.
     wv = model.wv
     wv_num_features = wv.vectors[0].shape[0]
     w2v_tfidf_mean = []
-    for i, tweet in enumerate(train_df.clean_tweets):
-        n = len(tweet)
-        v = np.zeros(200,)
-        for word in tweet:
+    for i, tweet in enumerate(df.clean_text):
+        n = 0
+        v = np.zeros(wv_num_features,)
+        for word in tweet.split():
             if word in w2v_vocabs and word in feature_names:
+                n += 1
                 w2v = wv[word]
                 ti = tfidf.iloc[i][word]
                 v += w2v*ti
-        w2v_tfidf_mean.append(v/n)
+        try:
+            w2v_tfidf_mean.append(v/n)
+        except ZeroDivisionError:
+            w2v_tfidf_mean.append(0)
+    # generate feature dataframe
     X = pd.DataFrame(w2v_tfidf_mean, columns=['feat_'+str(i) for i in range(wv_num_features)])
     
     
@@ -68,13 +68,13 @@ def generate_word_feature_vectors(w2vmodel, tfVectorizer, train_df, interval = '
     return features
 
 
-def generate_features(train_df, stocks_df, w2vmodel="./model/w2v_model", tfVectorizer='./model/tfVectorizer',  interval = '15'):
+def generate_features(train_df, stocks_df, w2vmodel="./models/w2v_model", tfVectorizer='./models/tfVectorizer',  interval = '15'):
     features = generate_word_feature_vectors(w2vmodel, tfVectorizer, train_df)
     X = pd.merge(features.reset_index(), stocks_df, left_on ='datetime', right_on ='date').drop(columns=['date'])
     y = X.pop('target')
-    X = X.pop('datetime')
+    dt = X.pop('datetime')
 
-    return X, y
+    return X, y, dt
 
 
 def train(X, y):
@@ -84,26 +84,31 @@ def train(X, y):
     joblib.dump(rfr, f'./models/random_forest.m')
     print('Model saved!')
 
-
-def validate(date_text):
-    try:
-        datetime.datetime.strptime(date_text, '%Y-%m-%d')
-    except ValueError:
-        raise ValueError("Incorrect data format, should be YYYY-MM-DD")
+def validate_file(type, filename):
+    if type == 'tweets':
+        try:
+            df = pd.read_csv(f'./data/{filename}', \
+                converters={"clean_text": lambda x: x.strip("[]").split(", ")})
+        except FileNotFoundError:
+            raise FileNotFoundError(f"{filename} Not Found!")
+    elif type == 'stocks':
+        try:
+            df = pd.read_csv(f'./data/{filename}', parse_dates=['date'])
+        except FileNotFoundError:
+            raise FileNotFoundError(f"{filename} Not Found!")
+    else:
+        raise ValueError(f'Incorrect type. Choose from ["tweets", "stocks"]')
+    return df
 
 if __name__ == '__main__':
-    from_date = input('please enter from date, format YYYY-MM-DD')
-    to_date = input('please enter to date, format YYYY-MM-DD')
-    validate(from_date)
-    validate(to_date)
-    try:
-        df = pd.read_csv(f'./data/tweets_{from_date}_{to_date}.csv')
-        stocks_df = pd.read_csv(f'./data/JETS_{from_date}_{to_date}.csv',parse_dates=['date'])
-    except:
-        raise FileNotFoundError("Please make sure file exists in data folder!\
-            If file is not found, run clean_tweets_data.py to save a file for specified dates.")
+    tweets_file = input('Enter tweets file name: ')
+    stocks_file = input('Enter stocks file name: ')
+
+    df = validate_file('tweets', tweets_file)
+    stocks_df = validate_file('stocks', stocks_file)
+
     print("Generating Features...")
-    X, y = generate_features(df, stocks_df)
+    X, y, dt = generate_features(df, stocks_df)
     print('Trainig Model...')
     train(X,y)
     print('Done!')
