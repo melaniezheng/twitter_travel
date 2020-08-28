@@ -39,6 +39,17 @@ Note that the training data range is only 2 weeks period and the project is just
 - prediction:
   - script to preprocess prediction data and generate feature vectors
   - prediction accuracy measured in Mean Absoute Error and time.
+  
+#### Prediction Accuracy:
+- Best Model (FFNN-50neurons) Mean Absolute Error on Test Set - 0.0009964263153076302
+- Baseline Model Error for comparison: 0.03703124999999989 
+  - Baseline Model is simply guessing the mean of last 4 time step prices, i.e. average of t-15min, t-30min, t-45min and t-60min
+  - we could try exponential moving average as baseline model
+- Other models tried and respective MAE:
+  - Random Forest: 0.09600401935594842
+  - K Nearest Neighbors: 0.14787000000000008
+  - Long Short Term Memory (LSTM): 0.5384848988342285
+  Note that I did not put in effort to fine tune the above models.
 
 #### TO DO:
 - write algorithm to output trading strategy (buy, sell, hold) that satisfied on investing objectives within constraints. 
