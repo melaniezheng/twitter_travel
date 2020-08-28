@@ -8,20 +8,20 @@ __python__ : version 3.7.4
 
 Note that the training data range is only 2 weeks period and the project is just a POC as there are many limitations.
 
-#### NLP on tweets:
-- search keyword: travel 
+#### NLP on tweets: 
+- search keyword: travel (get_tweets.py)
 - remove retweets --> save to sqlite database (cronjob every 5 minute)
 - remove non-english tweets (due to googletrans api restriction on daily call limits)
-- remove urls and mentions
+- remove urls and mentions (clean_tweets_data.py)
 - process emojis and non-text word representations
 - cleaning tweets: lower case, tokenize, remove stopwords, lemmatize and stem words
 - use TextBlob to get sentiment and polarity of each tweets
 
-#### Stock price data:
-- get realtime stock price (ticker:JETS) at 5 minute interval 
+#### Stock price data: 
+- get realtime stock price (ticker:JETS) at 15 minute interval (get_realtime_stock_quotes.py)
 - stock data columns: datetime, open, high, low, close, volumn, pct_change
 - save to sqlite database (cronjob every day)
-- mask current close price (this will be the target of the predictive model) and shift close column to represent last_price(t-5 minutes) and last_volumn(t-5 minutes)
+- mask current close price (this will be the target of the predictive model) and shift close column to represent last_price(t-5 minutes) and last_volumn(t-5 minutes) -- clean_stocks_data.py
 
 #### Predict JETS Price at t+ 15min using Feed Forward Neural Net:
 - build neural net with 50 neurons in hidden layer. (try simple NN first before adding more hidden layers)
