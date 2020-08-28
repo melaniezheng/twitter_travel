@@ -51,7 +51,7 @@ Note that the training data range is only 2 weeks period and the project is just
   - Long Short Term Memory (LSTM): 0.5384848988342285
   Note that I did not put in effort to fine tune the above models.
 
-#### TO DO:
+#### Future Work:
 - write algorithm to output trading strategy (buy, sell, hold) that satisfied on investing objectives within constraints. 
 - explore other models. especially RNN which makes sense for sequencial stock market.
 - try different feature engineering. i.e. adding more text feature from tweets, try w2v model, n-gram tfidf.
