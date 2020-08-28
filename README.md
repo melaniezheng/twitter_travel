@@ -54,6 +54,7 @@ Note that the training data range is only 2 weeks period and the project is just
 
 #### Future Work:
 - write algorithm to output trading strategy (buy, sell, hold) that satisfied on investing objectives within constraints. 
+- gather larger training data and retrain the model.
 - explore other models. especially RNN which makes sense for sequencial stock market.
 - try different feature engineering. i.e. adding more text feature from tweets, try w2v model, n-gram tfidf.
 - stream real-time tweet data (instead of api.search) for more up-to-date analysis and prediction.
