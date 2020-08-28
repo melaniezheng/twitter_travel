@@ -99,9 +99,9 @@ def get_tweets_data(from_date, to_date, db_file = 'traveltweets.db'):
             lang_detect.append('NotFound')
             
     df['lang'] = lang_detect
-    df['clean_text'] = df.text.apply(lambda tw: clean_tweets(tw, tokenize=True))
+    df['clean_text'] = df.text.apply(lambda tw: clean_tweets(tw, tokenize=False))
     csv_fn = f'tweets_{from_date}_{to_date}.csv'
-    df.to_csv(csv_fn, index=False) # save to csv file
+    df.to_csv(f'./data/{csv_fn}', index=False) # save to csv file
     print(f'{csv_fn} created successfully!')
 
 def validate(date_text):
