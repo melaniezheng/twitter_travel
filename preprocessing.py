@@ -2,74 +2,101 @@ import os
 import datetime
 import pandas as pd
 import numpy as np
-import joblib
-from gensim.models import word2vec
 import pickle
-from clean_tweets_data import clean_tweets
+from textblob import TextBlob
+import joblib
+from sklearn.preprocessing import MinMaxScaler
 
+def get_sentiment(text):
+    tb = TextBlob(text)
+    return TextBlob(text).sentiment
 
-def generate_word_feature_vectors(w2vmodel, tfVectorizer, df, params, interval = 15):
-    # generate feature vectors from tweets.
-    # size depends on w2v model feature size.
-    # currently we have 200 feature vectors per tweet + 3 additional hand crafted features 
-    model = word2vec.Word2Vec.load(w2vmodel, mmap='r')
-    vectorizer = joblib.load(tfVectorizer)
-    tweets = df.clean_text.apply(lambda l: ' '.join(l))
-    vectors = vectorizer.transform(tweets)
-    feature_names = vectorizer.get_feature_names()
+def training_preprocessor(tweets_df, stocks_df, train_size, interval = 15, scale = True):
+    '''generate features from dataframe
+    final features: verified, followers_count, tweet_count, has_locations, last_close, last_vol, last_pct_change
+    input: tweet_df, stocks_df, output_filename
+    output: x_train, y_train, x_test, y_test, train_datetime, test_datetime'''
+    polarities = []
+    sentiments = []
+    for t in tweets_df.clean_text:
+        p,s = get_sentiment(str(t))
+        polarities.append(p)
+        sentiments.append(s)
+        
+    tweets_df['polarity'] = polarities
+    tweets_df['sentiment'] = sentiments
 
-    # convert tfidf vectors to dataframe
-    tfidf = pd.DataFrame(vectors.toarray(), columns=feature_names)
-    w2v_vocabs = list(model.wv.vocab.keys())
-    wv = model.wv
-    wv_num_features = wv.vectors[0].shape[0]
-
-    # for each tweet we define feature vectors as the mean of w2v vector * tf-idf value for each word in the tweet.
-    w2v_tfidf_mean = []
-    for i, tweet in enumerate(df.clean_text):
-        n = 0
-        v = np.zeros(wv_num_features,)
-        for word in tweet.split():
-            if word in w2v_vocabs and word in feature_names:
-                n += 1
-                w2v = wv[word]
-                ti = tfidf.iloc[i][word]
-                v += w2v*ti
-        try:
-            w2v_tfidf_mean.append(v/n)
-        except ZeroDivisionError:
-            w2v_tfidf_mean.append(v)
-    X = pd.DataFrame(w2v_tfidf_mean, columns=['feat_'+str(i) for i in range(wv_num_features)])
-    now = datetime.datetime.now()
-    X.to_csv(f'./data/tmp/feature_vectors_{now.strftime("%Y-%m-%d-%H:%M")}.csv', index = False)
-    
-    
-    # add additional features i.e. high_followers, high_num_tweets (1 for high 0 for low), 
-    high_followers = params['high_followers'] 
-    df['high_followers'] = df['followers_count'].apply(lambda x: 1 if x >= high_followers else 0)
-    X = pd.concat([df[['verified','high_followers']], X], axis = 1)
-
-
-    X['datetime'] = pd.to_datetime(df['datetime'], format="%Y-%m-%d %H:%M:%S", errors = 'coerce')
+    X = tweets_df.copy()
+    X['datetime'] = pd.to_datetime(X['datetime'], format="%Y-%m-%d %H:%M:%S", errors = 'coerce') # convert to datetime format
     X = X.dropna(subset = ['datetime']) # drop missing dates
     X['datetime'] = X['datetime'].apply(lambda dt: datetime.datetime(dt.year, dt.month, dt.day, dt.hour,interval*(dt.minute // interval)))
-    
-    # aggregate to specified time interval i.e. 15 minute interval
-    features = X.groupby('datetime').mean()
-    features['num_tweets'] = X.groupby('datetime').size().tolist()
-    high_num_tweets = params['high_num_tweets']
-    features['high_num_tweets'] = features['num_tweets'].apply(lambda x: 1 if x >= high_num_tweets else 0)
-    features.drop(columns='num_tweets', inplace=True)
 
-    return features
+    # add new features: average of verified tweets, average follower counts, average percent user with location tag
+    features = X.groupby('datetime').mean()[['verified', 'followers_count']].reset_index()
+    features['tweet_count'] = X.groupby('datetime').size().tolist()
+    features['has_locations'] = X.groupby('datetime')['user_location'].count().tolist()
+    features['has_locations'] = features['has_locations'] / features['tweet_count']
 
+    # merge stocks data
+    features = pd.merge(features, stocks_df, left_on='datetime', right_on = 'date').drop(columns=['date'])
+    features.to_csv('./data/tmp/features.csv', index = False)
+    # features should have datetime, verified, followers_count, tweet_count, has_locations, \
+    # last_close, last_vol, last_pct_change, target
+    train = features[:176]
+    test = features[176:]
+    x_train = train.copy()
+    x_test = test.copy()
+    dt_train = x_train.pop('datetime')
+    dt_test = x_test.pop('datetime')
+    y_train = x_train.pop('target')
+    y_test = x_test.pop('target')
 
-def generate_features(df, stocks_df, params, w2vmodel="./models/w2v_model", tfVectorizer='./models/tfVectorizer',  interval = 15):
-    features = generate_word_feature_vectors(w2vmodel, tfVectorizer, df, params)
-    X = pd.merge(features.reset_index(), stocks_df, left_on ='datetime', right_on ='date').drop(columns=['date'])
-    y = X.pop('target')
-    dt = X.pop('datetime')
-    return X, y, dt
+    # min_max scale
+    if scale:
+        sc = MinMaxScaler(feature_range=(0,1))
+        x_train = sc.fit_transform(x_train) # except Datetime column
+        joblib.dump(sc, './models/min_max_scaler')
+        x_test = sc.transform(x_test)
+
+    return x_train, y_train, x_test, y_test, dt_train, dt_test
+
+def prediction_preprocessor(tweets_df, stocks_df, interval = 15, scale = True):
+    '''generate features from dataframe
+    final features: verified, followers_count, tweet_count, has_locations, last_close, last_vol, last_pct_change
+    input: tweet_df, stocks_df, output_filename
+    output: features(X)'''
+    polarities = []
+    sentiments = []
+    for t in tweets_df.clean_text:
+        p,s = get_sentiment(str(t))
+        polarities.append(p)
+        sentiments.append(s)
+        
+    tweets_df['polarity'] = polarities
+    tweets_df['sentiment'] = sentiments
+    X = tweets_df.copy()
+    X['datetime'] = pd.to_datetime(X['datetime'], format="%Y-%m-%d %H:%M:%S", errors = 'coerce') # convert to datetime format
+    X = X.dropna(subset = ['datetime']) # drop missing dates
+    X['datetime'] = X['datetime'].apply(lambda dt: datetime.datetime(dt.year, dt.month, dt.day, dt.hour,interval*(dt.minute // interval)))
+
+    # add new features: average of verified tweets, average follower counts, average percent user with location tag
+    features = X.groupby('datetime').mean()[['verified', 'followers_count']].reset_index()
+    features['tweet_count'] = X.groupby('datetime').size().tolist()
+    features['has_locations'] = X.groupby('datetime')['user_location'].count().tolist()
+    features['has_locations'] = features['has_locations'] / features['tweet_count']
+
+    # merge stocks data
+    features = pd.merge(features, stocks_df, left_on='datetime', right_on = 'date').drop(columns=['date'])
+    features.to_csv('./data/tmp/features.csv', index = False)
+    # features should have datetime, verified, followers_count, tweet_count, has_locations, \
+    # last_close, last_vol, last_pct_change
+    X = train.pop('datetime')
+
+    if scale:
+        sc = joblib.load('./models/min_max_scaler')
+        X = sc.transform(X)
+    return X
+
 
 def validate_file(type, filename):
     if type == 'tweets':
@@ -79,18 +106,28 @@ def validate_file(type, filename):
             raise FileNotFoundError(f"{filename} Not Found!")
     elif type == 'stocks':
         try:
-            df = pd.read_csv(f'./data/{filename}', parse_dates=['date'])
+            df = pd.read_csv(f'./data/{filename}', parse_dates = ['date'])
         except FileNotFoundError:
             raise FileNotFoundError(f"{filename} Not Found!")
     else:
         raise ValueError(f'Incorrect type. Choose from ["tweets", "stocks"]')
     return df
 
-def run_preprocessor(tweets_file, stocks_file):
-    df = validate_file('tweets', tweets_file)
-    stocks_df = validate_file('stocks', stocks_file)
-    params = pickle.load(open('./models/params.p','rb'))
-    X, y, dt = generate_features(df, stocks_df, params)
-    return X, y, dt
+def run_preprocessor(type, tweets_file, stocks_file, train_size=176, interval = 15):
+    '''input:
+    type: string, "training" or "predicting",
+    tweets_file: filepath to tweets file
+    stocks_file: filepath to stocks file'''
+    if type == 'training':
+        tweets_df = validate_file('tweets', tweets_file)
+        stocks_df = validate_file('stocks', stocks_file)
+        X_train, y_train, X_test, y_test, train_dt, test_dt = training_preprocessor(tweets_df, stocks_df, train_size, interval)
+        return X_train, y_train, X_test, y_test, train_dt, test_dt
+    elif type == 'predicting':
+        tweets_df = validate_file('tweets', tweets_file)
+        stocks_df = validate_file('stocks', stocks_file)
+        X = prediction_preprocessor(tweets_df, stocks_df, train_size, interval)
+    else:
+        raise ValueError('Incorrect type provided. Please enter "training" or "predicting".')
     
     
