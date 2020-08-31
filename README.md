@@ -44,7 +44,7 @@ Note that the training data range is only 2 weeks period and the project is just
 - Best Model (FFNN-50neurons) Mean Absolute Error on Test Set - 0.00098
 - ![FFNN - 50 neurons - test - predict](/models/plots/ffnn50_test_accuracy.png)
 - Baseline Model Error for comparison: 0.03703
-  - Baseline Model is simply guessing the mean of last 4 time step prices, i.e. average of t-15min, t-30min, t-45min and t-60min
+  - Baseline Model is simply guessing the rolling mean of last 4 time step prices, i.e. average of t-15min, t-30min, t-45min and t-60min
   - we could try exponential moving average as baseline model
 - Other models tried and respective MAE:
   - Random Forest: 0.09600
