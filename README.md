@@ -41,15 +41,15 @@ Note that the training data range is only 2 weeks period and the project is just
   - predict stock price at t+15 min using data at t.
   
 #### Prediction Accuracy:
-- Best Model (FFNN-50neurons) Mean Absolute Error on Test Set - 0.0009964263153076302
+- Best Model (FFNN-50neurons) Mean Absolute Error on Test Set - 0.00098
 - ![FFNN - 50 neurons - test - predict](/models/plots/ffnn50_test_accuracy.png)
-- Baseline Model Error for comparison: 0.03703124999999989 
+- Baseline Model Error for comparison: 0.03703
   - Baseline Model is simply guessing the mean of last 4 time step prices, i.e. average of t-15min, t-30min, t-45min and t-60min
   - we could try exponential moving average as baseline model
 - Other models tried and respective MAE:
-  - Random Forest: 0.09600401935594842
-  - K Nearest Neighbors: 0.14787000000000008
-  - Long Short Term Memory (LSTM): 0.5384848988342285
+  - Random Forest: 0.09600
+  - K Nearest Neighbors: 0.14787
+  - Long Short Term Memory (LSTM): 0.42498
   Note that I did not put in effort to fine tune the above models.
 
 #### Future Work:
