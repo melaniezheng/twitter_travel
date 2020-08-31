@@ -31,14 +31,14 @@ def training_preprocessor(tweets_df, stocks_df, train_size, interval = 15, scale
     X['datetime'] = X['datetime'].apply(lambda dt: datetime.datetime(dt.year, dt.month, dt.day, dt.hour,interval*(dt.minute // interval)))
 
     # add new features: average of verified tweets, average follower counts, average percent user with location tag
-    features = X.groupby('datetime').mean()[['verified', 'followers_count']].reset_index()
+    features = X.groupby('datetime').mean()[['polarity','sentiment','verified', 'followers_count']].reset_index()
     features['tweet_count'] = X.groupby('datetime').size().tolist()
     features['has_locations'] = X.groupby('datetime')['user_location'].count().tolist()
     features['has_locations'] = features['has_locations'] / features['tweet_count']
 
     # merge stocks data
     features = pd.merge(features, stocks_df, left_on='datetime', right_on = 'date').drop(columns=['date'])
-    features.to_csv(f'./data/tmp/features_train_{features['datetime'].max().strftime("%m-%d-%Y_%H-%M-%S")}.csv', index = False)
+    features.to_csv(f'./data/tmp/features_train_{datetime.datetime.now().strftime("%Y-%m-%d")}.csv', index = False)
     # features should have datetime, verified, followers_count, tweet_count, has_locations, \
     # last_close, last_vol, last_pct_change, target
     train = features[:176]
@@ -79,14 +79,14 @@ def prediction_preprocessor(tweets_df, stocks_df, interval = 15, scale = True):
     X['datetime'] = X['datetime'].apply(lambda dt: datetime.datetime(dt.year, dt.month, dt.day, dt.hour,interval*(dt.minute // interval)))
 
     # add new features: average of verified tweets, average follower counts, average percent user with location tag
-    features = X.groupby('datetime').mean()[['verified', 'followers_count']].reset_index()
+    features = X.groupby('datetime').mean()[['polarity','sentiment','verified', 'followers_count']].reset_index()
     features['tweet_count'] = X.groupby('datetime').size().tolist()
     features['has_locations'] = X.groupby('datetime')['user_location'].count().tolist()
     features['has_locations'] = features['has_locations'] / features['tweet_count']
 
     # merge stocks data
     features = pd.merge(features, stocks_df, left_on='datetime', right_on = 'date').drop(columns=['date'])
-    features.to_csv(f'./data/tmp/features_pred_{features['datetime'].max().strftime("%m-%d-%Y_%H-%M-%S")}.csv', index = False)
+    features.to_csv(f'./data/tmp/features_pred_{datetime.datetime.now().strftime("%Y-%m-%d")}.csv', index = False)
     # features should have datetime, verified, followers_count, tweet_count, has_locations, \
     # last_close, last_vol, last_pct_change
     X = train.copy
