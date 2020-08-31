@@ -26,8 +26,8 @@ Note that the training data range is only 2 weeks period and the project is just
 #### Predict JETS Price at t+ 15min using Feed Forward Neural Net:
 - build neural net with 50 neurons in hidden layer. (try simple NN first before adding more hidden layers)
 - feature preprocessing and engineering: 
-  - hand craft features: tweets_count (in 15 minute interval), average sentiment, average polarity, average verified user, average followers count
-  - total features 8 (above + last stock price, last trading volumn, last percent change)
+  - hand craft features: __tweets_count (in 15 minute interval), average sentiment, average polarity, average verified user, average followers count__
+  - total features 8 (above + __last stock price, last trading volumn, last percent change__)
   - normalize and scale features
 - training: (train_neural_network.py) 
   - evaluate model using Mean Squared Error and Mean Absolute Error
